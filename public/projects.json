@@ -1,28 +1,11 @@
 [
   {
-    "id": "p-01",
-    "name": "signal.relay",
-    "tags": ["ts", "api"],
-    "status": "active",
-    "type": "project",
-    "href": "#",
-    "description": "",
-    "pinned": false
-  },
-  {
-    "id": "p-02",
-    "name": "void.watcher",
-    "tags": ["python", "ops"],
-    "status": "wip",
-    "type": "project",
-    "href": "#",
-    "description": "",
-    "pinned": false
-  },
-  {
     "id": "p-03",
     "name": "node.ghost",
-    "tags": ["react", "ui"],
+    "tags": [
+      "react",
+      "ui"
+    ],
     "status": "archived",
     "type": "portfolio",
     "href": "#",
