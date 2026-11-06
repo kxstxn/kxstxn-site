@@ -3,18 +3,21 @@ import { loadSharedJson, saveSharedJson } from './remoteStore'
 
 export type SiteSettings = {
   availability: Availability
+  updatedAt: number
 }
 
 const STORAGE_KEY = 'kxstxn.site'
 
 const seedSettings: SiteSettings = {
   availability: 'open',
+  updatedAt: 0,
 }
 
 type Listener = () => void
 
 let settings: SiteSettings = { ...seedSettings }
 let ready = false
+let loadGeneration = 0
 const listeners = new Set<Listener>()
 
 function emit() {
@@ -28,6 +31,8 @@ function setLocal(next: SiteSettings) {
 }
 
 async function persist(next: SiteSettings) {
+  // Invalidate in-flight init so a late remote response cannot clobber this save.
+  loadGeneration += 1
   setLocal(next)
   await saveSharedJson('site.json', next, 'chore: update site settings')
 }
@@ -39,11 +44,32 @@ function isAvailability(value: unknown): value is Availability {
 function normalize(raw: unknown): SiteSettings {
   if (!raw || typeof raw !== 'object') return { ...seedSettings }
   const row = raw as Record<string, unknown>
+  const updatedAt =
+    typeof row.updatedAt === 'number' && Number.isFinite(row.updatedAt)
+      ? row.updatedAt
+      : 0
+
   return {
     availability: isAvailability(row.availability)
       ? row.availability
       : seedSettings.availability,
+    updatedAt,
   }
+}
+
+function readCached(): SiteSettings | null {
+  const cached = localStorage.getItem(STORAGE_KEY)
+  if (!cached) return null
+  try {
+    return normalize(JSON.parse(cached))
+  } catch {
+    localStorage.removeItem(STORAGE_KEY)
+    return null
+  }
+}
+
+function pickNewer(a: SiteSettings, b: SiteSettings) {
+  return a.updatedAt >= b.updatedAt ? a : b
 }
 
 export function subscribeSite(listener: Listener) {
@@ -60,36 +86,36 @@ export function isSiteReady() {
 }
 
 export async function initSite() {
+  const generation = ++loadGeneration
+
+  const cached = readCached()
+  if (cached) {
+    settings = cached
+    emit()
+  }
+
   try {
     const remote = await loadSharedJson('site.json')
+    if (generation !== loadGeneration) return
+
     if (remote != null) {
-      settings = normalize(remote)
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings))
-      ready = true
-      emit()
-      return
+      const normalized = normalize(remote)
+      const next = cached ? pickNewer(cached, normalized) : normalized
+      settings = next
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
     }
   } catch {
-    // fall through
+    // keep cached / seed
   }
 
-  const cached = localStorage.getItem(STORAGE_KEY)
-  if (cached) {
-    try {
-      settings = normalize(JSON.parse(cached))
-      ready = true
-      emit()
-      return
-    } catch {
-      localStorage.removeItem(STORAGE_KEY)
-    }
-  }
-
-  settings = { ...seedSettings }
+  if (generation !== loadGeneration) return
   ready = true
   emit()
 }
 
 export async function setAvailability(availability: Availability) {
-  await persist({ ...settings, availability })
+  await persist({
+    availability,
+    updatedAt: Date.now(),
+  })
 }

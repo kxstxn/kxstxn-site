@@ -5,7 +5,7 @@
   "outputDirectory": "dist",
   "rewrites": [
     {
-      "source": "/((?!assets/).*)",
+      "source": "/((?!assets/|.*\\.json$|robots\\.txt$|sitemap\\.xml$|og\\.(?:jpg|svg)$|favicon(?:-192)?\\.(?:svg|jpg)$|apple-touch-icon\\.jpg$).*)",
       "destination": "/index.html"
     }
   ]
