@@ -70,6 +70,28 @@ export async function loadSharedJson(file: string) {
   }
 }
 
+async function getFileSha(
+  apiUrl: string,
+  headers: Record<string, string>,
+): Promise<string | undefined> {
+  const existing = await fetch(`${apiUrl}?ref=${BRANCH}`, {
+    headers,
+    cache: 'no-store',
+  })
+
+  if (existing.ok) {
+    const body = (await existing.json()) as { sha?: string }
+    return body.sha
+  }
+
+  if (existing.status === 404) return undefined
+  throw new Error(`GitHub read failed (${existing.status})`)
+}
+
+function isShaConflict(status: number, message: string) {
+  return status === 409 || /does not match/i.test(message)
+}
+
 export async function saveSharedJson(file: string, data: unknown, message: string) {
   const token = getGithubToken()
   if (!token) {
@@ -83,31 +105,27 @@ export async function saveSharedJson(file: string, data: unknown, message: strin
     'X-GitHub-Api-Version': '2022-11-28',
   }
 
-  let sha: string | undefined
-  const existing = await fetch(`${apiUrl}?ref=${BRANCH}`, { headers })
-  if (existing.ok) {
-    const body = (await existing.json()) as { sha?: string }
-    sha = body.sha
-  } else if (existing.status !== 404) {
-    throw new Error(`GitHub read failed (${existing.status})`)
-  }
-
   const content = toBase64(`${JSON.stringify(data, null, 2)}\n`)
-  const response = await fetch(apiUrl, {
-    method: 'PUT',
-    headers: {
-      ...headers,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      message,
-      content,
-      branch: BRANCH,
-      ...(sha ? { sha } : {}),
-    }),
-  })
+  let lastError = 'GitHub save failed'
 
-  if (!response.ok) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const sha = await getFileSha(apiUrl, headers)
+    const response = await fetch(apiUrl, {
+      method: 'PUT',
+      headers: {
+        ...headers,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        message,
+        content,
+        branch: BRANCH,
+        ...(sha ? { sha } : {}),
+      }),
+    })
+
+    if (response.ok) return
+
     let detail = `GitHub save failed (${response.status})`
     try {
       const body = (await response.json()) as { message?: string }
@@ -115,6 +133,12 @@ export async function saveSharedJson(file: string, data: unknown, message: strin
     } catch {
       // ignore
     }
-    throw new Error(detail)
+
+    lastError = detail
+    if (!isShaConflict(response.status, detail)) {
+      throw new Error(detail)
+    }
   }
+
+  throw new Error(lastError)
 }
