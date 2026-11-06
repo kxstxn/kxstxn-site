@@ -1,0 +1,34 @@
+[
+  {
+    "id": "01",
+    "title": "development",
+    "summary": "apps · bots · tools",
+    "details": "Small apps, bots, and utilities shaped around your brief. Simple scope, quick feedback loops, no overbuild.",
+    "priceFrom": 50,
+    "priceUnit": "project"
+  },
+  {
+    "id": "02",
+    "title": "automation",
+    "summary": "scripts · pipelines",
+    "details": "Scripts and light pipelines that cut repetitive work — reports, syncs, hooks between the tools you already use.",
+    "priceFrom": 25,
+    "priceUnit": "project"
+  },
+  {
+    "id": "03",
+    "title": "web",
+    "summary": "sites · api · panels",
+    "details": "Landing pages, compact dashboards, and small APIs. Clean UI, workable backend, shipped without the enterprise tax.",
+    "priceFrom": 70,
+    "priceUnit": "project"
+  },
+  {
+    "id": "04",
+    "title": "consulting",
+    "summary": "architecture · review",
+    "details": "Code review, architecture chat, and help unblocking sticky problems. Async or a short call — your call.",
+    "priceFrom": 12,
+    "priceUnit": "hour"
+  }
+]

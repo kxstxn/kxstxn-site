@@ -1,0 +1,5 @@
+[
+  { "id": "tg", "label": "telegram", "value": "@kxstxn", "href": "#" },
+  { "id": "gh", "label": "github", "value": "github.com/kxstxn", "href": "#" },
+  { "id": "mail", "label": "email", "value": "hello@kxstxn.dev", "href": "mailto:hello@kxstxn.dev" }
+]
