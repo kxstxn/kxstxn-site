@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { clearGithubToken, getGithubToken, hasGithubToken, setGithubToken } from '../lib/remoteStore'
 import { loginAdmin, logoutAdmin } from '../lib/projectsStore'
 import { AdminContacts } from './admin/AdminContacts'
 import { AdminProjects } from './admin/AdminProjects'
@@ -17,6 +18,9 @@ export function Admin() {
     typeof sessionStorage !== 'undefined' ? sessionStorage.getItem('kxstxn.admin') === '1' : false,
   )
   const [password, setPassword] = useState('')
+  const [token, setToken] = useState(() =>
+    typeof sessionStorage !== 'undefined' ? getGithubToken() : '',
+  )
   const [error, setError] = useState('')
   const [tab, setTab] = useState<Tab>('projects')
   const [notice, setNotice] = useState('')
@@ -36,6 +40,16 @@ export function Admin() {
     logoutAdmin()
     setAuthed(false)
     window.location.hash = ''
+  }
+
+  function handleSaveToken(event: FormEvent) {
+    event.preventDefault()
+    setGithubToken(token, true)
+    setNotice(
+      hasGithubToken()
+        ? 'token saved — edits publish for everyone'
+        : 'token cleared',
+    )
   }
 
   if (!authed) {
@@ -79,6 +93,38 @@ export function Admin() {
             logout
           </button>
         </div>
+
+        <form className="admin__form admin__token" onSubmit={handleSaveToken}>
+          <label className="admin__field admin__field--wide">
+            <span>github token (contents: write on kxstxn-site)</span>
+            <input
+              type="password"
+              value={token}
+              onChange={(event) => setToken(event.target.value)}
+              placeholder="ghp_..."
+              autoComplete="off"
+            />
+          </label>
+          <div className="admin__actions">
+            <button type="submit" className="admin__btn">
+              save token
+            </button>
+            <button
+              type="button"
+              className="admin__btn admin__btn--ghost"
+              onClick={() => {
+                clearGithubToken()
+                setToken('')
+                setNotice('token cleared')
+              }}
+            >
+              clear
+            </button>
+            <span className="admin__hint">
+              {hasGithubToken() ? 'publish: on' : 'publish: off — only you see edits'}
+            </span>
+          </div>
+        </form>
 
         <div className="admin__tabs" role="tablist" aria-label="Admin sections">
           {tabs.map((item) => (

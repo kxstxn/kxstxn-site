@@ -690,6 +690,16 @@ img {
   gap: 1.25rem;
 }
 
+.admin__token {
+  margin: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.admin__token .admin__hint {
+  align-self: center;
+}
+
 .admin__form {
   display: flex;
   flex-direction: column;
@@ -1085,11 +1095,30 @@ img {
     gap: 0.25rem;
   }
 
+  .hero {
+    padding-top: 4.25rem;
+  }
+
   .hero__nav {
-    position: static;
-    justify-content: flex-start;
-    margin-bottom: 2rem;
-    left: auto;
-    right: auto;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    justify-content: space-between;
+    align-items: center;
+    gap: 0.35rem;
+    margin: 0;
+    padding: 0.95rem var(--pad);
+    border-bottom: 1px solid var(--line);
+    background: rgba(5, 5, 5, 0.94);
+    font-size: 0.6875rem;
+    letter-spacing: 0.04em;
+    z-index: 2;
+  }
+
+  .hero__nav a {
+    flex: 1 1 0;
+    text-align: center;
+    padding: 0.35rem 0.25rem;
   }
 }

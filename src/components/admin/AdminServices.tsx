@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { runAdminAction } from '../../lib/adminAction'
 import {
   createServiceId,
   deleteService,
@@ -62,16 +63,26 @@ export function AdminServices({ onNotice }: Props) {
 
   function handleSave(event: FormEvent) {
     event.preventDefault()
-    upsertService(fromDraft(draft))
-    setDraft(emptyDraft())
-    onNotice('service saved — download json to publish')
+    void runAdminAction(
+      async () => {
+        await upsertService(fromDraft(draft))
+        setDraft(emptyDraft())
+      },
+      onNotice,
+      'service published',
+    )
   }
 
   function handleDelete(id: string) {
     if (!window.confirm('delete this service?')) return
-    deleteService(id)
-    if (draft.id === id) setDraft(emptyDraft())
-    onNotice('service deleted')
+    void runAdminAction(
+      async () => {
+        await deleteService(id)
+        if (draft.id === id) setDraft(emptyDraft())
+      },
+      onNotice,
+      'service deleted',
+    )
   }
 
   async function handleReset() {
@@ -189,7 +200,13 @@ export function AdminServices({ onNotice }: Props) {
               <button
                 type="button"
                 className="admin__btn admin__btn--ghost"
-                onClick={() => moveService(service.id, -1)}
+                onClick={() =>
+                  void runAdminAction(
+                    () => moveService(service.id, -1),
+                    onNotice,
+                    'order updated',
+                  )
+                }
                 disabled={index === 0}
                 aria-label="move up"
               >
@@ -198,7 +215,13 @@ export function AdminServices({ onNotice }: Props) {
               <button
                 type="button"
                 className="admin__btn admin__btn--ghost"
-                onClick={() => moveService(service.id, 1)}
+                onClick={() =>
+                  void runAdminAction(
+                    () => moveService(service.id, 1),
+                    onNotice,
+                    'order updated',
+                  )
+                }
                 disabled={index === services.length - 1}
                 aria-label="move down"
               >

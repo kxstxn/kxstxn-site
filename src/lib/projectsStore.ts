@@ -1,3 +1,5 @@
+import { loadSharedJson, saveSharedJson } from './remoteStore'
+
 export type ProjectStatus = 'active' | 'wip' | 'archived'
 export type ProjectType = 'project' | 'portfolio'
 
@@ -63,10 +65,15 @@ function emit() {
   listeners.forEach((listener) => listener())
 }
 
-function persist(next: Project[]) {
+function setLocal(next: Project[]) {
   projects = next
   localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
   emit()
+}
+
+async function persist(next: Project[]) {
+  setLocal(next)
+  await saveSharedJson('projects.json', next, 'chore: update projects')
 }
 
 function normalize(raw: unknown): Project[] {
@@ -118,6 +125,19 @@ export function isProjectsReady() {
 }
 
 export async function initProjects() {
+  try {
+    const remote = await loadSharedJson('projects.json')
+    if (remote != null) {
+      projects = normalize(remote)
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(projects))
+      ready = true
+      emit()
+      return
+    }
+  } catch {
+    // fall through
+  }
+
   const cached = localStorage.getItem(STORAGE_KEY)
   if (cached) {
     try {
@@ -130,26 +150,16 @@ export async function initProjects() {
     }
   }
 
-  try {
-    const response = await fetch(`/projects.json?t=${Date.now()}`)
-    if (response.ok) {
-      projects = normalize(await response.json())
-    } else {
-      projects = [...seedProjects]
-    }
-  } catch {
-    projects = [...seedProjects]
-  }
-
+  projects = [...seedProjects]
   ready = true
   emit()
 }
 
-export function saveProjects(next: Project[]) {
-  persist(next)
+export async function saveProjects(next: Project[]) {
+  await persist(next)
 }
 
-export function upsertProject(project: Project) {
+export async function upsertProject(project: Project) {
   const exists = projects.some((item) => item.id === project.id)
   if (!exists) {
     const insertAt = project.pinned
@@ -157,18 +167,18 @@ export function upsertProject(project: Project) {
       : projects.length
     const next = [...projects]
     next.splice(insertAt < 0 ? projects.length : insertAt, 0, project)
-    persist(next)
+    await persist(next)
     return
   }
 
-  persist(projects.map((item) => (item.id === project.id ? project : item)))
+  await persist(projects.map((item) => (item.id === project.id ? project : item)))
 }
 
-export function deleteProject(id: string) {
-  persist(projects.filter((item) => item.id !== id))
+export async function deleteProject(id: string) {
+  await persist(projects.filter((item) => item.id !== id))
 }
 
-export function togglePin(id: string) {
+export async function togglePin(id: string) {
   const index = projects.findIndex((item) => item.id === id)
   if (index < 0) return
 
@@ -178,17 +188,17 @@ export function togglePin(id: string) {
   const lastPinned = rest.findLastIndex((entry) => entry.pinned)
   const insertAt = item.pinned ? lastPinned + 1 : Math.max(lastPinned + 1, 0)
   rest.splice(insertAt, 0, item)
-  persist(rest)
+  await persist(rest)
 }
 
-export function moveProject(id: string, direction: -1 | 1) {
+export async function moveProject(id: string, direction: -1 | 1) {
   const index = projects.findIndex((item) => item.id === id)
   const target = index + direction
   if (index < 0 || target < 0 || target >= projects.length) return
 
   const next = [...projects]
   ;[next[index], next[target]] = [next[target], next[index]]
-  persist(next)
+  await persist(next)
 }
 
 export function createProjectId() {
@@ -207,7 +217,7 @@ export function downloadProjectsJson() {
   URL.revokeObjectURL(url)
 }
 
-export function resetProjectsToFile() {
+export async function resetProjectsToFile() {
   localStorage.removeItem(STORAGE_KEY)
   return initProjects()
 }

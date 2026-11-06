@@ -1,3 +1,5 @@
+import { loadSharedJson, saveSharedJson } from './remoteStore'
+
 export type ContactLink = {
   id: string
   label: string
@@ -23,10 +25,15 @@ function emit() {
   listeners.forEach((listener) => listener())
 }
 
-function persist(next: ContactLink[]) {
+function setLocal(next: ContactLink[]) {
   contacts = next
   localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
   emit()
+}
+
+async function persist(next: ContactLink[]) {
+  setLocal(next)
+  await saveSharedJson('contacts.json', next, 'chore: update contacts')
 }
 
 function normalize(raw: unknown): ContactLink[] {
@@ -65,6 +72,19 @@ export function isContactsReady() {
 }
 
 export async function initContacts() {
+  try {
+    const remote = await loadSharedJson('contacts.json')
+    if (remote != null) {
+      contacts = normalize(remote)
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(contacts))
+      ready = true
+      emit()
+      return
+    }
+  } catch {
+    // fall through
+  }
+
   const cached = localStorage.getItem(STORAGE_KEY)
   if (cached) {
     try {
@@ -77,41 +97,31 @@ export async function initContacts() {
     }
   }
 
-  try {
-    const response = await fetch(`/contacts.json?t=${Date.now()}`)
-    if (response.ok) {
-      contacts = normalize(await response.json())
-    } else {
-      contacts = [...seedContacts]
-    }
-  } catch {
-    contacts = [...seedContacts]
-  }
-
+  contacts = [...seedContacts]
   ready = true
   emit()
 }
 
-export function upsertContact(contact: ContactLink) {
+export async function upsertContact(contact: ContactLink) {
   const exists = contacts.some((item) => item.id === contact.id)
-  persist(
+  await persist(
     exists
       ? contacts.map((item) => (item.id === contact.id ? contact : item))
       : [...contacts, contact],
   )
 }
 
-export function deleteContact(id: string) {
-  persist(contacts.filter((item) => item.id !== id))
+export async function deleteContact(id: string) {
+  await persist(contacts.filter((item) => item.id !== id))
 }
 
-export function moveContact(id: string, direction: -1 | 1) {
+export async function moveContact(id: string, direction: -1 | 1) {
   const index = contacts.findIndex((item) => item.id === id)
   const target = index + direction
   if (index < 0 || target < 0 || target >= contacts.length) return
   const next = [...contacts]
   ;[next[index], next[target]] = [next[target], next[index]]
-  persist(next)
+  await persist(next)
 }
 
 export function createContactId() {
@@ -130,7 +140,7 @@ export function downloadContactsJson() {
   URL.revokeObjectURL(url)
 }
 
-export function resetContactsToFile() {
+export async function resetContactsToFile() {
   localStorage.removeItem(STORAGE_KEY)
   return initContacts()
 }

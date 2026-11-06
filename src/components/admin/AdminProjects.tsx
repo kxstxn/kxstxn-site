@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { runAdminAction } from '../../lib/adminAction'
 import {
   createProjectId,
   deleteProject,
@@ -77,20 +78,30 @@ export function AdminProjects({ onNotice }: Props) {
 
   function handleSave(event: FormEvent) {
     event.preventDefault()
-    upsertProject(fromDraft(draft))
-    setDraft(emptyDraft())
-    onNotice('project saved — download json to publish')
+    void runAdminAction(
+      async () => {
+        await upsertProject(fromDraft(draft))
+        setDraft(emptyDraft())
+      },
+      onNotice,
+      'project published',
+    )
   }
 
   function handleDelete(id: string) {
     if (!window.confirm('delete this project?')) return
-    deleteProject(id)
-    if (draft.id === id) setDraft(emptyDraft())
-    onNotice('project deleted')
+    void runAdminAction(
+      async () => {
+        await deleteProject(id)
+        if (draft.id === id) setDraft(emptyDraft())
+      },
+      onNotice,
+      'project deleted',
+    )
   }
 
   async function handleReset() {
-    if (!window.confirm('reset projects to projects.json / defaults?')) return
+    if (!window.confirm('reset projects to shared / defaults?')) return
     await resetProjectsToFile()
     setDraft(emptyDraft())
     onNotice('projects reset')
@@ -227,7 +238,13 @@ export function AdminProjects({ onNotice }: Props) {
               <button
                 type="button"
                 className="admin__btn admin__btn--ghost"
-                onClick={() => moveProject(project.id, -1)}
+                onClick={() =>
+                  void runAdminAction(
+                    () => moveProject(project.id, -1),
+                    onNotice,
+                    'order updated',
+                  )
+                }
                 disabled={index === 0}
                 aria-label="move up"
               >
@@ -236,7 +253,13 @@ export function AdminProjects({ onNotice }: Props) {
               <button
                 type="button"
                 className="admin__btn admin__btn--ghost"
-                onClick={() => moveProject(project.id, 1)}
+                onClick={() =>
+                  void runAdminAction(
+                    () => moveProject(project.id, 1),
+                    onNotice,
+                    'order updated',
+                  )
+                }
                 disabled={index === projects.length - 1}
                 aria-label="move down"
               >
@@ -245,7 +268,13 @@ export function AdminProjects({ onNotice }: Props) {
               <button
                 type="button"
                 className="admin__btn admin__btn--ghost"
-                onClick={() => togglePin(project.id)}
+                onClick={() =>
+                  void runAdminAction(
+                    () => togglePin(project.id),
+                    onNotice,
+                    project.pinned ? 'unpinned' : 'pinned',
+                  )
+                }
               >
                 {project.pinned ? 'unpin' : 'pin'}
               </button>

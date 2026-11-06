@@ -1,3 +1,5 @@
+import { loadSharedJson, saveSharedJson } from './remoteStore'
+
 export type Service = {
   id: string
   title: string
@@ -58,10 +60,15 @@ function emit() {
   listeners.forEach((listener) => listener())
 }
 
-function persist(next: Service[]) {
+function setLocal(next: Service[]) {
   services = next
   localStorage.setItem(STORAGE_KEY, JSON.stringify(next))
   emit()
+}
+
+async function persist(next: Service[]) {
+  setLocal(next)
+  await saveSharedJson('services.json', next, 'chore: update services')
 }
 
 function normalize(raw: unknown): Service[] {
@@ -103,6 +110,19 @@ export function isServicesReady() {
 }
 
 export async function initServices() {
+  try {
+    const remote = await loadSharedJson('services.json')
+    if (remote != null) {
+      services = normalize(remote)
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(services))
+      ready = true
+      emit()
+      return
+    }
+  } catch {
+    // fall through
+  }
+
   const cached = localStorage.getItem(STORAGE_KEY)
   if (cached) {
     try {
@@ -115,41 +135,31 @@ export async function initServices() {
     }
   }
 
-  try {
-    const response = await fetch(`/services.json?t=${Date.now()}`)
-    if (response.ok) {
-      services = normalize(await response.json())
-    } else {
-      services = [...seedServices]
-    }
-  } catch {
-    services = [...seedServices]
-  }
-
+  services = [...seedServices]
   ready = true
   emit()
 }
 
-export function upsertService(service: Service) {
+export async function upsertService(service: Service) {
   const exists = services.some((item) => item.id === service.id)
-  persist(
+  await persist(
     exists
       ? services.map((item) => (item.id === service.id ? service : item))
       : [...services, service],
   )
 }
 
-export function deleteService(id: string) {
-  persist(services.filter((item) => item.id !== id))
+export async function deleteService(id: string) {
+  await persist(services.filter((item) => item.id !== id))
 }
 
-export function moveService(id: string, direction: -1 | 1) {
+export async function moveService(id: string, direction: -1 | 1) {
   const index = services.findIndex((item) => item.id === id)
   const target = index + direction
   if (index < 0 || target < 0 || target >= services.length) return
   const next = [...services]
   ;[next[index], next[target]] = [next[target], next[index]]
-  persist(next)
+  await persist(next)
 }
 
 export function createServiceId() {
@@ -168,7 +178,7 @@ export function downloadServicesJson() {
   URL.revokeObjectURL(url)
 }
 
-export function resetServicesToFile() {
+export async function resetServicesToFile() {
   localStorage.removeItem(STORAGE_KEY)
   return initServices()
 }

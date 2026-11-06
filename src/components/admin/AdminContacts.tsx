@@ -1,4 +1,5 @@
 import { useState, type FormEvent } from 'react'
+import { runAdminAction } from '../../lib/adminAction'
 import {
   createContactId,
   deleteContact,
@@ -53,16 +54,26 @@ export function AdminContacts({ onNotice }: Props) {
 
   function handleSave(event: FormEvent) {
     event.preventDefault()
-    upsertContact(fromDraft(draft))
-    setDraft(emptyDraft())
-    onNotice('link saved — download json to publish')
+    void runAdminAction(
+      async () => {
+        await upsertContact(fromDraft(draft))
+        setDraft(emptyDraft())
+      },
+      onNotice,
+      'link published',
+    )
   }
 
   function handleDelete(id: string) {
     if (!window.confirm('delete this link?')) return
-    deleteContact(id)
-    if (draft.id === id) setDraft(emptyDraft())
-    onNotice('link deleted')
+    void runAdminAction(
+      async () => {
+        await deleteContact(id)
+        if (draft.id === id) setDraft(emptyDraft())
+      },
+      onNotice,
+      'link deleted',
+    )
   }
 
   async function handleReset() {
@@ -158,7 +169,13 @@ export function AdminContacts({ onNotice }: Props) {
               <button
                 type="button"
                 className="admin__btn admin__btn--ghost"
-                onClick={() => moveContact(contact.id, -1)}
+                onClick={() =>
+                  void runAdminAction(
+                    () => moveContact(contact.id, -1),
+                    onNotice,
+                    'order updated',
+                  )
+                }
                 disabled={index === 0}
                 aria-label="move up"
               >
@@ -167,7 +184,13 @@ export function AdminContacts({ onNotice }: Props) {
               <button
                 type="button"
                 className="admin__btn admin__btn--ghost"
-                onClick={() => moveContact(contact.id, 1)}
+                onClick={() =>
+                  void runAdminAction(
+                    () => moveContact(contact.id, 1),
+                    onNotice,
+                    'order updated',
+                  )
+                }
                 disabled={index === contacts.length - 1}
                 aria-label="move down"
               >
