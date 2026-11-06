@@ -1,4 +1,13 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="kxstxn">
   <rect width="32" height="32" fill="#050505"/>
-  <text x="16" y="22" text-anchor="middle" font-family="ui-monospace, monospace" font-size="14" font-weight="600" fill="#7dff9a">k</text>
+  <g fill="#7dff9a">
+    <!-- stem -->
+    <rect x="8" y="6" width="3" height="20"/>
+    <!-- upper arm -->
+    <polygon points="11,14 20,6 24,6 14,15"/>
+    <!-- lower arm -->
+    <polygon points="13,15 24,26 20,26 11,17"/>
+    <!-- caret blink block -->
+    <rect x="22" y="22" width="3" height="4"/>
+  </g>
 </svg>
