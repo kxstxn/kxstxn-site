@@ -1,8 +1,16 @@
+export type Availability = 'open' | 'limited' | 'closed'
+
 export const site = {
   brand: 'kxstxn',
   role: 'programmer',
   tagline: 'code, systems, automation — no noise',
   status: 'status: online',
+  /** Fixed offset label shown in hero status */
+  timezone: 'UTC+3',
+  url: 'https://kxstxn.dev',
+  description: 'kxstxn — programmer. code, systems, automation — no noise.',
+  donate:
+    'https://boosty.to/kxstxn/single-payment/donation/840193/target?share=target_link',
 }
 
 export const nav = [

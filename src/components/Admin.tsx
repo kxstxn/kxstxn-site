@@ -4,10 +4,12 @@ import { loginAdmin, logoutAdmin } from '../lib/projectsStore'
 import { AdminContacts } from './admin/AdminContacts'
 import { AdminProjects } from './admin/AdminProjects'
 import { AdminServices } from './admin/AdminServices'
+import { AdminSite } from './admin/AdminSite'
 
-type Tab = 'projects' | 'services' | 'links'
+type Tab = 'site' | 'projects' | 'services' | 'links'
 
 const tabs: { id: Tab; label: string }[] = [
+  { id: 'site', label: 'site' },
   { id: 'projects', label: 'projects' },
   { id: 'services', label: 'services' },
   { id: 'links', label: 'links' },
@@ -22,7 +24,7 @@ export function Admin() {
     typeof sessionStorage !== 'undefined' ? getGithubToken() : '',
   )
   const [error, setError] = useState('')
-  const [tab, setTab] = useState<Tab>('projects')
+  const [tab, setTab] = useState<Tab>('site')
   const [notice, setNotice] = useState('')
 
   function handleLogin(event: FormEvent) {
@@ -146,6 +148,7 @@ export function Admin() {
 
         {notice ? <p className="admin__notice">{notice}</p> : null}
 
+        {tab === 'site' ? <AdminSite onNotice={setNotice} /> : null}
         {tab === 'projects' ? <AdminProjects onNotice={setNotice} /> : null}
         {tab === 'services' ? <AdminServices onNotice={setNotice} /> : null}
         {tab === 'links' ? <AdminContacts onNotice={setNotice} /> : null}
