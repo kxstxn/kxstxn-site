@@ -1,1 +1,12 @@
-[]
+[
+  {
+    "id": "p-mw5jdop7",
+    "name": "hibiko",
+    "tags": [],
+    "status": "wip",
+    "type": "project",
+    "href": "https://kxsxtn.itch.io/hibiko-pixelart-studio",
+    "description": "hibiko is a soft little pixel art studio for drawing sprites, tiles, and short animations.",
+    "pinned": false
+  }
+]
